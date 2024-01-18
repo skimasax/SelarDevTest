@@ -21,11 +21,11 @@ class FxService
 
         $input['creator_currency']    = $request->input('creator_currency');
         $input['buyer_currency']    = $request->input('buyer_currency');
-        $input['amount']    = $request->input('amount');
+        $input['creator_selling_price_in_creator_curreny']    = $request->input('creator_selling_price_in_creator_curreny');
 
 
-       $rate= FlutterRate::where('from',$input['creator_currency'])
-        ->where('to',$input['buyer_currency'])
+       $rate= FlutterRate::where('from',$input['buyer_currency'])
+        ->where('to',$input['creator_currency'])
         ->first();
 
         //add company markup of 5%...This can be done dynamically but in this case since it a test and we have the percentage given
@@ -35,22 +35,35 @@ class FxService
         $markup = $flwRate * $markupPercentage;
         $newRate = $flwRate + $markup;
 
-        return $newRate;
+        return $newRate * $input['creator_selling_price_in_creator_curreny'];
     }
 
-    public function payoutRate($sendingCountry,$receivingCountry,$amount)
+    public function payoutRate($request)
     {
-        $rate= FlutterRate::where('from',$sendingCountry)
-        ->where('to',$receivingCountry)
+
+
+        $input['buyer_payment_currency']    = $request->input('buyer_payment_currency');
+        $input['creator_receiving_currency']    = $request->input('creator_receiving_currency');
+        $input['amount_paid_in_buyer_currency']    = $request->input('amount_paid_in_buyer_currency');
+
+        $rate= FlutterRate::where('from',$input['creator_receiving_currency'] )
+        ->where('to',$input['buyer_payment_currency'])
         ->first();
 
-        //add company markup of 5%...This can be done dynamically but in this case since it a test and we have the percentage given
+
+        //firstmarkdown on the amount paid in buyer currency
+        $markDownPercentage = 0.05;
+        $markDown = $markDownPercentage * $input['amount_paid_in_buyer_currency'];
+        $amountPaid = $input['amount_paid_in_buyer_currency'] - $markDown;
+
 
         $flwRate = $rate->flw_rate;
-        $markup = 0.05;
-        $newRate = $flwRate * $markup;
+        $newMarkDown = $markDownPercentage * $flwRate;
+        $newRate = $flwRate - $newMarkDown;   
 
-        return $newRate;
+        //dd($markDown,$flwRate, $newRate);
+
+        return $newRate * $amountPaid;
     }
 
 

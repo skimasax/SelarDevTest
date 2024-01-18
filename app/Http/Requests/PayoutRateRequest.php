@@ -4,7 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class SellContentRequest extends FormRequest
+class PayoutRateRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -23,9 +23,9 @@ class SellContentRequest extends FormRequest
     {
         return [
             //
-            "creator_currency" => ["required"],
-            "buyer_currency" => ["required"],
-            "amount" => ['required', 'numeric'],
+            "buyer_payment_currency" => ['required'],
+            "creator_receiving_currency" => ['required'],
+            "amount_paid_in_buyer_currency" => ['required', 'numeric']
         ];
     }
 }
