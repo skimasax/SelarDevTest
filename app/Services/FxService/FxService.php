@@ -23,17 +23,14 @@ class FxService
         $input['buyer_currency']    = $request->input('buyer_currency');
         $input['creator_selling_price_in_creator_curreny']    = $request->input('creator_selling_price_in_creator_curreny');
 
+        //FlwRate
+        $rate = $this->getFlutterRate($input['buyer_currency'],$input['creator_currency']);
 
-       $rate= FlutterRate::where('from',$input['buyer_currency'])
-        ->where('to',$input['creator_currency'])
-        ->first();
+        //markupPercentage
+        $markupPercentage = config("constants.percentage.rate");
 
-        //add company markup of 5%...This can be done dynamically but in this case since it a test and we have the percentage given
-
-        $flwRate = $rate->flw_rate;
-        $markupPercentage = 0.05;
-        $markup = $flwRate * $markupPercentage;
-        $newRate = $flwRate + $markup;
+        //calculate new rate
+        $newRate = $this->calculateNewRate($rate->flw_rate,$markupPercentage);
 
         return $newRate * $input['creator_selling_price_in_creator_curreny'];
     }
@@ -46,24 +43,43 @@ class FxService
         $input['creator_receiving_currency']    = $request->input('creator_receiving_currency');
         $input['amount_paid_in_buyer_currency']    = $request->input('amount_paid_in_buyer_currency');
 
-        $rate= FlutterRate::where('from',$input['creator_receiving_currency'] )
-        ->where('to',$input['buyer_payment_currency'])
-        ->first();
+        //flWrate
+        $rate = $this->getFlutterRate($input['creator_receiving_currency'],$input['buyer_payment_currency']);
 
+        //markdownPercentage
+        $markDownPercentage = config("constants.percentage.rate");
 
-        //firstmarkdown on the amount paid in buyer currency
-        $markDownPercentage = 0.05;
-        $markDown = $markDownPercentage * $input['amount_paid_in_buyer_currency'];
-        $amountPaid = $input['amount_paid_in_buyer_currency'] - $markDown;
+          //firstmarkdown on the amount paid in buyer currency
+        $amountPaid = $this->calculateAmountPaid($input['amount_paid_in_buyer_currency'],$markDownPercentage);   
 
-
-        $flwRate = $rate->flw_rate;
-        $newMarkDown = $markDownPercentage * $flwRate;
-        $newRate = $flwRate - $newMarkDown;   
-
-        //dd($markDown,$flwRate, $newRate);
+        //calculate new payout
+        $newRate = $this->calculateNewPayoutRate($rate->flw_rate,$markDownPercentage);
 
         return $newRate * $amountPaid;
+    }
+
+
+    protected function getFlutterRate($from,$to)
+    {
+        return FlutterRate::where('from', $from)->where('to', $to)->firstOrFail();
+    }
+
+    protected function calculateNewRate($flwRate,$percentage)
+    {
+        $markup = $flwRate * $percentage;
+        return $flwRate + $markup;
+    }
+
+    protected function calculateNewPayoutRate($flwRate,$percentage)
+    {
+        $markdown = $flwRate * $percentage;
+        return $flwRate - $markdown;
+    }
+
+    protected function calculateAmountPaid($amount,$percentage)
+    {
+        $markdown = $percentage * $amount;
+        return $amount - $markdown;
     }
 
 
