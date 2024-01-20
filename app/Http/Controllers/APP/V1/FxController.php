@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 class FxController extends Controller
 {
     use HttpResponses;
+    
     protected $fxservice;
 
     public function __construct(FxService $FxService)
